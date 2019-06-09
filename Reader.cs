@@ -16,7 +16,7 @@ namespace TextGenerator
                 while(!reader.EndOfStream)
                 {
                     word = reader.ReadLine();
-                    words.Add(word.Trim().ToLower());
+                    words.Add(word.Trim().ToLower().RemoveSpecials());
                 }
             }
 

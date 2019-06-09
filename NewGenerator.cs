@@ -16,6 +16,7 @@ namespace TextGenerator
 
         private static readonly int minSentenceLength = 2;
         private static readonly int maxSentenceLength = 30;
+        private static readonly int maxSentenceGroupLength = 1000;
 
         private readonly HashSet<string> words;
 
@@ -37,11 +38,10 @@ namespace TextGenerator
             {
                 while(intsLeft > 0)
                 {
-                    // numbersOfWords.Clear();
                     numbersOfWords = new List<int>();
                     for (int i = 0; i < numberOfThreads; i++)
                     {
-                        wordsForTask = random.Next(minSentenceLength, maxSentenceLength);
+                        wordsForTask = random.Next(minSentenceLength, maxSentenceGroupLength);
                         if(intsLeft - wordsForTask <= minSentenceLength)
                         {
                             wordsForTask = intsLeft;
@@ -56,15 +56,40 @@ namespace TextGenerator
 
                     Parallel.ForEach(numbersOfWords, numberForSingleThread =>
                     {
-                        writer.Write(GetSentence(numberForSingleThread));
+                        writer.Write(GetSentences(numberForSingleThread));
                     });
-                    // System.Console.WriteLine(intsLeft);
                 }   
             }
         }
 
+        private string GetSentences(int numberOfWords)
+        {
+            string result = "";
+            var random = new Random();
+            int wordsForSentence;
+            int wordsLeft = numberOfWords;
+
+            while (true)
+            {
+                wordsForSentence = random.Next(minSentenceLength, maxSentenceLength);
+                if(wordsLeft - wordsForSentence <= minSentenceLength)
+                {
+                    wordsForSentence = wordsLeft;
+                    wordsLeft = 0;
+                    result += GetSentence(wordsForSentence);
+                    break;
+                }
+
+                wordsLeft -= wordsForSentence;
+                result += GetSentence(wordsForSentence);
+            }
+
+            return result;
+        }
+
         private string GetSentence(int numberOfWords)
         {
+
             TextInfo myTI = new CultureInfo("en-US",false).TextInfo;
             var random = new Random();
             int wordsToGenerate = numberOfWords - 2;
@@ -72,16 +97,21 @@ namespace TextGenerator
             builder.Append(myTI.ToTitleCase(GetRandomWord(words, random)));
             double decision;
 
-            for (int i = 0; i < numberOfWords; i++)
+            for (int i = 0; i <= wordsToGenerate; i++)
             {
                 decision = random.NextDouble();
-                if(decision < 0.15)
+                if(decision < 0.08)
                 {
                     builder.Append(" ");
                     builder.Append(GetRandomDigit(random));
                 }
                 else if(decision < 0.25)
                 {
+                    decision = random.NextDouble();
+                    if(decision < 0.35)
+                    {
+                        builder.Append(" ");
+                    }
                     builder.Append(GetRandomSpecialChar(random));
                 }
                 builder.Append(" ");
@@ -91,7 +121,7 @@ namespace TextGenerator
             builder.Append(GetRandomWord(words, random));
             builder.Append(". ");
             decision = random.NextDouble();
-            if(decision < 0.2)
+            if(decision < 0.1)
             {
                 builder.AppendLine();
             }
